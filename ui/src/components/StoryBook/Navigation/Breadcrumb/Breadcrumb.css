@@ -1,0 +1,50 @@
+.navMain {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.listOrder {
+  display: flex;
+  list-style: none;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+}
+
+nav ol li {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+nav ol li a {
+  display: flex;
+  text-decoration: none;
+  align-items: center;
+}
+
+nav ol a + svg {
+  margin: 0rem 1rem;
+}
+
+.backgroundEllipse {
+  width: 24px;
+  height: 15px;
+  border-radius: 5px;
+  background-color: #c4c4c4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.divEllipse {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ellipseArrow {
+  margin: 0rem 1rem;
+}

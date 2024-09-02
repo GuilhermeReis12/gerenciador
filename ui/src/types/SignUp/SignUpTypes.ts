@@ -1,0 +1,20 @@
+export type SignUpProps = {
+  formData?: any;
+  setFormData?: any;
+  handleChange?: any;
+  nome?: string;
+  sobrenome?: string;
+  data_nascimento?: string;
+  email?: string;
+  cep?: string;
+  logradouro?: string;
+  numero?: string;
+  complemento?: string;
+  bairro?: string;
+  estado?: string;
+  cidade?: string;
+  senha?: string;
+  senhaConfirm?: string;
+  errorMsg?: any;
+  setErrorMsg?: any;
+};
