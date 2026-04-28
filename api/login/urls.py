@@ -14,3 +14,5 @@ urlpatterns = [
     path("user-create", views.UserView.as_view({"post": "create"})),
     path("validate_password", views.PasswordView.as_view()),
 ]
+
+urlpatterns += router.urls

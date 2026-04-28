@@ -6,30 +6,38 @@ import { HeaderContainer, MenuContainer } from './NavStyled';
 
 export const Nav = () => {
   const navigate = useNavigate();
-  // const handleSupportMenuClick = () => {
-  //   navigate('/item-form/new');
-  // };
   return (
     <>
       <HeaderContainer>
         <MenuContainer style={{ display: 'flex' }}>
           <Menu
-            title="Início"
+            title="Dashboard"
             onClick={() => {
               navigate('/home');
             }}
-          />     
-          <Menu
-          title="Clientes"
-          onClick={() => {
-            navigate('/todosclientes');
-          }}
-        />
-          {/* <Menu onClick={handleSupportMenuClick} title="Clientes" /> */}
+          />
           <Menu
             title="Tarefas"
             onClick={() => {
               navigate('/tarefas');
+            }}
+          />
+          <Menu
+            title="Agenda"
+            onClick={() => {
+              navigate('/agenda');
+            }}
+          />
+          <Menu
+            title="Relatórios"
+            onClick={() => {
+              navigate('/relatorios');
+            }}
+          />
+          <Menu
+            title="Perfil"
+            onClick={() => {
+              navigate('/meu-perfil');
             }}
           />
         </MenuContainer>

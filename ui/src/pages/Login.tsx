@@ -16,7 +16,7 @@ const LoginPage: React.FC = () => {
         username: value.user
       };
 
-      const response = await api.post('/api/login', payload);
+      const response = await api.post('/login', payload);
       localStorage.setItem('token', response.data.user.token);
       navigate('/home');
     } catch (error: any) {
@@ -30,7 +30,7 @@ const LoginPage: React.FC = () => {
       } else {
         toast.error('Ocorreu um erro desconhecido.');
       }
-    }
+      }
   };
 
   return (

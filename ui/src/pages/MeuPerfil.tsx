@@ -48,12 +48,8 @@ const MeuPerfilPage: React.FC = () => {
         password: formValues?.values?.new_password,
         confirm_password: formValues?.values?.confirm_password
       };
-      return axios
-        .post(
-          `${process.env.REACT_APP_API_HOST || 'http://localhost:8000'
-          }api/validate_password`,
-          params
-        )
+      return api
+        .post(`/validate_password`, params)
         .then((res) => {
           handleSubmit(formValues);
         })

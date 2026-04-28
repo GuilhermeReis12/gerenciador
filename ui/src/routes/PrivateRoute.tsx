@@ -11,7 +11,20 @@ const PrivateRoute = () => {
   return isAuthenticated ? (
     <>
       <Header />
-      <Container>
+      <Container
+        maxWidth={false}
+        sx={{
+          pb: 3,
+          width: {
+            xs: '100%',
+            sm: '94%',
+            md: '88%',
+            lg: '78%',
+            xl: '70%'
+          },
+          mx: 'auto'
+        }}
+      >
         <Nav />
         <Outlet />
       </Container>

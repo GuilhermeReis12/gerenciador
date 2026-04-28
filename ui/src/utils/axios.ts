@@ -6,7 +6,7 @@ import axios, {
 import { getToken, clearToken } from './auth';
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_HOST || 'http://localhost:8000'
+  baseURL: `${process.env.REACT_APP_API_HOST || 'http://localhost:8000'}/api`
 });
 
 api.interceptors.request.use(
