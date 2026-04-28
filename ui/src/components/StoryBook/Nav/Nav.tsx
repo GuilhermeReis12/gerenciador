@@ -35,6 +35,18 @@ export const Nav = () => {
             }}
           />
           <Menu
+            title="Operações"
+            onClick={() => {
+              navigate('/operacoes');
+            }}
+          />
+          <Menu
+            title="Auditoria"
+            onClick={() => {
+              navigate('/auditoria');
+            }}
+          />
+          <Menu
             title="Perfil"
             onClick={() => {
               navigate('/meu-perfil');

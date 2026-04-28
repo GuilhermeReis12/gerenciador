@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+import json
+from corporativo.models import Empresa
 
 from utils.models import TimestampedModel
 
@@ -18,6 +20,9 @@ class TarefaPrioridade(models.TextChoices):
 
 
 class Tarefa(TimestampedModel):
+    empresa = models.ForeignKey(
+        Empresa, on_delete=models.CASCADE, related_name="tarefas", null=True, blank=True
+    )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -57,4 +62,41 @@ class Tarefa(TimestampedModel):
 
     def __str__(self):
         return self.titulo
+
+
+class AuditAction(models.TextChoices):
+    CREATED = "CREATED", "Criada"
+    UPDATED = "UPDATED", "Atualizada"
+    DELETED = "DELETED", "Excluída"
+    STATUS_CHANGED = "STATUS_CHANGED", "Status alterado"
+    ARCHIVED = "ARCHIVED", "Arquivada"
+    RESTORED = "RESTORED", "Desarquivada"
+    BULK_UPDATED = "BULK_UPDATED", "Atualização em lote"
+
+
+class TarefaAuditLog(TimestampedModel):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    tarefa = models.ForeignKey(
+        "Tarefa", on_delete=models.SET_NULL, null=True, blank=True, related_name="audit_logs"
+    )
+    action = models.CharField(max_length=30, choices=AuditAction.choices)
+    payload = models.TextField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = "Log de Tarefa"
+        verbose_name_plural = "Logs de Tarefas"
+        ordering = ["-created_at"]
+
+    def set_payload(self, value):
+        self.payload = json.dumps(value, ensure_ascii=False, default=str) if value else None
+
+    def get_payload(self):
+        if not self.payload:
+            return None
+        try:
+            return json.loads(self.payload)
+        except Exception:
+            return self.payload
 

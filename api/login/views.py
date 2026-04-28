@@ -39,6 +39,10 @@ class UserView(ModelViewSet):
             user.email = request.data["email"]
             user.name = request.data["name"]
             user.user_image = request.data["user_image"]
+            if "role" in request.data:
+                user.role = request.data["role"]
+            if "empresa" in request.data:
+                user.empresa_id = request.data["empresa"]
 
             user.set_password(password)
             user.save()

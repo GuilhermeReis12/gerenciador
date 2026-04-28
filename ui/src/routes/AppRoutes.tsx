@@ -10,6 +10,8 @@ import MeuPerfil from "../pages/MeuPerfil";
 import Tarefas from "../pages/Tarefas";
 import Agenda from "../pages/Agenda";
 import Relatorios from "../pages/Relatorios";
+import Auditoria from "../pages/Auditoria";
+import Operacoes from "../pages/Operacoes";
 
 const AppRoutes: React.FC = () => {
   return (
@@ -24,6 +26,8 @@ const AppRoutes: React.FC = () => {
             <Route path="/tarefas" element={<Tarefas />} />
             <Route path="/agenda" element={<Agenda />} />
             <Route path="/relatorios" element={<Relatorios />} />
+            <Route path="/operacoes" element={<Operacoes />} />
+            <Route path="/auditoria" element={<Auditoria />} />
             <Route path="/erro" element={<Erro />} />
             <Route path="*" element={<NotFound />} />
           </Route>

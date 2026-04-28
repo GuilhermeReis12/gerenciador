@@ -18,6 +18,8 @@ user_form_fields = [
     "name",
     "email",
     "is_active",
+    "role",
+    "empresa",
     "user_image",
 ]
 
@@ -42,6 +44,8 @@ class UserSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "email",
+            "role",
+            "empresa",
             "groups",
             "person",
         ]
@@ -55,7 +59,7 @@ class UserForm(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["username", "first_name", "last_name", "email", "person", "password"]
+        fields = ["username", "first_name", "last_name", "email", "person", "empresa", "role", "password"]
 
 
 class CriarSenhaSerializer(serializers.Serializer):

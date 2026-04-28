@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from tarefas.models import Tarefa, TarefaStatus
+from tarefas.models import Tarefa, TarefaStatus, TarefaAuditLog
 
 
 class TarefaSerializer(serializers.ModelSerializer):
@@ -8,6 +8,7 @@ class TarefaSerializer(serializers.ModelSerializer):
         model = Tarefa
         fields = [
             "id",
+            "empresa",
             "titulo",
             "descricao",
             "status",
@@ -18,7 +19,7 @@ class TarefaSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "concluida_em", "created_at", "updated_at"]
+        read_only_fields = ["id", "empresa", "concluida_em", "created_at", "updated_at"]
 
     def validate(self, attrs):
         data_limite = attrs.get("data_limite")
@@ -41,4 +42,29 @@ class TarefaSerializer(serializers.ModelSerializer):
 class TarefaUpdateSerializer(TarefaSerializer):
     class Meta(TarefaSerializer.Meta):
         read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class TarefaAuditLogSerializer(serializers.ModelSerializer):
+    user_name = serializers.SerializerMethodField()
+    payload_json = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TarefaAuditLog
+        fields = [
+            "id",
+            "action",
+            "payload",
+            "payload_json",
+            "created_at",
+            "user_name",
+            "tarefa",
+        ]
+
+    def get_user_name(self, obj):
+        if not obj.user:
+            return "Sistema"
+        return obj.user.username
+
+    def get_payload_json(self, obj):
+        return obj.get_payload()
 

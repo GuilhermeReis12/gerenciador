@@ -32,6 +32,8 @@ INSTALLED_APPS = [
     'login.apps.LoginConfig',
     "temas.apps.TemasConfig",
     "person.apps.PersonConfig",
+    "corporativo.apps.CorporativoConfig",
+    "operacoes.apps.OperacoesConfig",
     "tarefas.apps.TarefasConfig",
 
 ]
