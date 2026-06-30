@@ -1,24 +1,22 @@
-import React from 'react';
-import LoginCard from '../components/login/LoginCard';
-import { api } from '../utils/axios';
+import React, { useState } from 'react';
+import { api } from 'api/client';
 import { useNavigate } from 'react-router-dom';
-import '../components/login/BackgroundImage.css';
-import { TFormLogin } from '../types/Login/LoginTypes';
 import { toast } from 'react-toastify';
-import { setStoredUser, setStoredEmpresas, setActiveEmpresaId } from '../utils/auth';
-import { parseApiError } from '../utils/apiError';
+import { LoginForm } from 'components/forms/LoginForm';
+import { setStoredUser, setStoredEmpresas, setActiveEmpresaId } from 'utils/auth';
+import { parseApiError } from 'api/client';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (value: TFormLogin) => {
+  const handleLogin = async (value: { user: string; password: string }) => {
+    setLoading(true);
     try {
-      const payload = {
+      const response = await api.post('/login', {
         password: value.password,
         username: value.user
-      };
-
-      const response = await api.post('/login', payload);
+      });
       localStorage.setItem('token', response.data.user.token);
 
       const meResponse = await api.get('/me');
@@ -29,7 +27,8 @@ const LoginPage: React.FC = () => {
           username: profile.username,
           name: profile.name,
           email: profile.email,
-          role: profile.role
+          role: profile.role,
+          link_img: profile.link_img
         });
       }
 
@@ -44,14 +43,12 @@ const LoginPage: React.FC = () => {
       navigate('/home');
     } catch (error: unknown) {
       toast.error(parseApiError(error).message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <div className="background-image-container">
-      <LoginCard onLogin={handleLogin} />
-    </div>
-  );
+  return <LoginForm onSubmit={handleLogin} loading={loading} />;
 };
 
 export default LoginPage;

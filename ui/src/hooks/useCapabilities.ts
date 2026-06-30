@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api } from '../utils/axios';
-import { UserCapabilities } from '../types/tarefas';
+import { api } from 'api/client';
+import { UserCapabilities } from 'types/tarefas';
 
 const defaultCapabilities: UserCapabilities = {
   role: 'OPERATOR',

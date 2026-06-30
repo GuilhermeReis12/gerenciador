@@ -1,9 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Box,
   Button,
-  Card,
-  CardContent,
   Dialog,
   DialogActions,
   DialogContent,
@@ -17,35 +14,21 @@ import {
   Typography
 } from '@mui/material';
 import { toast } from 'react-toastify';
-import { api } from '../utils/axios';
-import { parseApiError } from '../utils/apiError';
-
-type Empresa = {
-  id: number;
-  nome: string;
-  cnpj: string;
-};
-
-type Registro = {
-  id: number;
-  tipo: 'TASK' | 'PRODUCT' | 'STOCK';
-  titulo: string;
-  descricao?: string | null;
-  sku?: string | null;
-  quantidade: string;
-  unidade: string;
-  ativo: boolean;
-  empresa?: number;
-};
-
-type Paginated<T> = {
-  results: T[];
-};
+import { api, parseApiError } from 'api/client';
+import { PageContainer } from 'components/layout/PageContainer';
+import { PageHeader } from 'components/layout/PageHeader';
+import { ContentCard } from 'components/ui/ContentCard';
+import { EmptyState } from 'components/feedback/EmptyState';
+import { DataPagination } from 'components/tables/DataPagination';
+import { usePagination } from 'hooks/usePagination';
+import { Paginated } from 'types/api';
+import { Empresa, RegistroOperacao, operacaoTipoLabel } from 'types/operacoes';
 
 const OperacoesPage: React.FC = () => {
+  const { page, pageSize, setPage, handlePageSizeChange } = usePagination();
   const [tipo, setTipo] = useState('');
   const [q, setQ] = useState('');
-  const [registros, setRegistros] = useState<Registro[]>([]);
+  const [data, setData] = useState<Paginated<RegistroOperacao> | null>(null);
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [userEmpresaId, setUserEmpresaId] = useState<number | ''>('');
   const [open, setOpen] = useState(false);
@@ -67,8 +50,8 @@ const OperacoesPage: React.FC = () => {
       ]);
 
       if (empresasResponse.status === 'fulfilled') {
-        const data = empresasResponse.value.data;
-        const list = Array.isArray(data) ? data : data.results || [];
+        const responseData = empresasResponse.value.data;
+        const list = Array.isArray(responseData) ? responseData : responseData.results || [];
         setEmpresas(list);
       }
 
@@ -82,16 +65,16 @@ const OperacoesPage: React.FC = () => {
     }
   };
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
-      const response = await api.get<Paginated<Registro>>('/operacoes', {
-        params: { tipo: tipo || undefined, q: q || undefined }
+      const response = await api.get<Paginated<RegistroOperacao>>('/operacoes', {
+        params: { page, page_size: pageSize, tipo: tipo || undefined, q: q || undefined }
       });
-      setRegistros(response.data.results || []);
+      setData(response.data);
     } catch (error) {
       toast.error(parseApiError(error).message);
     }
-  };
+  }, [page, pageSize, tipo, q]);
 
   useEffect(() => {
     loadEmpresas();
@@ -99,7 +82,9 @@ const OperacoesPage: React.FC = () => {
 
   useEffect(() => {
     load();
-  }, [tipo, q]);
+  }, [load]);
+
+  const registros = useMemo(() => data?.results || [], [data]);
 
   const create = async () => {
     if (!form.titulo.trim()) {
@@ -133,79 +118,90 @@ const OperacoesPage: React.FC = () => {
     }
   };
 
-  const openCreateModal = () => {
-    setForm((prev) => ({
-      ...prev,
-      empresa: userEmpresaId || prev.empresa || ''
-    }));
-    setOpen(true);
-  };
-
   return (
-    <Box sx={{ mt: 2 }}>
-      <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2}>
-        <Box>
-          <Typography variant="h5" sx={{ fontWeight: 800 }}>
-            Operações (Produto / Estoque / Tarefa)
-          </Typography>
-          <Typography color="text.secondary">
-            Base única para gerenciamento multipropósito por empresa.
-          </Typography>
-        </Box>
-        <Button variant="contained" onClick={openCreateModal}>
-          Novo registro
-        </Button>
-      </Stack>
+    <PageContainer>
+      <PageHeader
+        title="Operações"
+        description="Base única para gerenciamento multipropósito por empresa."
+        actions={
+          <Button
+            variant="contained"
+            onClick={() => {
+              setForm((prev) => ({ ...prev, empresa: userEmpresaId || prev.empresa || '' }));
+              setOpen(true);
+            }}
+          >
+            Novo registro
+          </Button>
+        }
+      />
 
-      <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} sx={{ mt: 2 }}>
-        <TextField
-          fullWidth
-          label="Buscar"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
-        <FormControl sx={{ minWidth: 220 }}>
-          <InputLabel>Tipo</InputLabel>
-          <Select label="Tipo" value={tipo} onChange={(e) => setTipo(e.target.value)}>
-            <MenuItem value="">Todos</MenuItem>
-            <MenuItem value="PRODUCT">Produto</MenuItem>
-            <MenuItem value="STOCK">Estoque</MenuItem>
-            <MenuItem value="TASK">Tarefa</MenuItem>
-          </Select>
-        </FormControl>
-      </Stack>
+      <ContentCard>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
+          <TextField
+            fullWidth
+            label="Buscar"
+            value={q}
+            onChange={(e) => {
+              setQ(e.target.value);
+              setPage(1);
+            }}
+          />
+          <FormControl sx={{ minWidth: 220 }}>
+            <InputLabel>Tipo</InputLabel>
+            <Select
+              label="Tipo"
+              value={tipo}
+              onChange={(e) => {
+                setTipo(e.target.value);
+                setPage(1);
+              }}
+            >
+              <MenuItem value="">Todos</MenuItem>
+              <MenuItem value="PRODUCT">Produto</MenuItem>
+              <MenuItem value="STOCK">Estoque</MenuItem>
+              <MenuItem value="TASK">Tarefa</MenuItem>
+            </Select>
+          </FormControl>
+        </Stack>
+      </ContentCard>
 
       <Stack spacing={1.2} sx={{ mt: 2 }}>
         {registros.map((item) => (
-          <Card key={item.id}>
-            <CardContent>
-              <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={1}>
-                <Typography sx={{ fontWeight: 700 }}>
-                  {item.titulo}
-                </Typography>
-                <Typography color="text.secondary">
-                  {item.tipo} {item.sku ? `- SKU ${item.sku}` : ''}
-                </Typography>
-              </Stack>
-              <Typography variant="body2" color="text.secondary">
-                Quantidade: {item.quantidade} {item.unidade}
+          <ContentCard key={item.id}>
+            <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={1}>
+              <Typography sx={{ fontWeight: 700 }}>{item.titulo}</Typography>
+              <Typography color="text.secondary">
+                {operacaoTipoLabel[item.tipo]} {item.sku ? `- SKU ${item.sku}` : ''}
               </Typography>
-              {!!item.descricao && (
-                <Typography variant="body2" sx={{ mt: 0.7 }}>
-                  {item.descricao}
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
+            </Stack>
+            <Typography variant="body2" color="text.secondary">
+              Quantidade: {item.quantidade} {item.unidade}
+            </Typography>
+            {!!item.descricao && (
+              <Typography variant="body2" sx={{ mt: 0.7 }}>
+                {item.descricao}
+              </Typography>
+            )}
+          </ContentCard>
         ))}
+
         {!registros.length && (
-          <Card>
-            <CardContent>
-              <Typography sx={{ fontWeight: 700 }}>Nenhum registro encontrado</Typography>
-            </CardContent>
-          </Card>
+          <EmptyState title="Nenhum registro encontrado" description="Crie um novo registro operacional." />
         )}
       </Stack>
+
+      {!!data && (
+        <DataPagination
+          page={page}
+          totalPages={data.total_pages}
+          count={data.count}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={handlePageSizeChange}
+          showPageSize
+        />
+      )}
 
       <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>Novo registro operacional</DialogTitle>
@@ -285,12 +281,13 @@ const OperacoesPage: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button variant="contained" onClick={create}>Salvar</Button>
+          <Button variant="contained" onClick={create}>
+            Salvar
+          </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </PageContainer>
   );
 };
 
 export default OperacoesPage;
-

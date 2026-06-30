@@ -1,28 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Chip,
-  Divider,
-  Skeleton,
-  Stack,
-  Typography
-} from '@mui/material';
-import { api } from '../utils/axios';
-
-type Tarefa = {
-  id: number;
-  titulo: string;
-  status: 'TODO' | 'IN_PROGRESS' | 'DONE';
-  prioridade: 'LOW' | 'MEDIUM' | 'HIGH';
-  data_limite?: string | null;
-  arquivada: boolean;
-};
-
-type Paginated<T> = {
-  results: T[];
-};
+import { Divider, Stack, Typography } from '@mui/material';
+import { api } from 'api/client';
+import { PageContainer } from 'components/layout/PageContainer';
+import { PageHeader } from 'components/layout/PageHeader';
+import { ContentCard } from 'components/ui/ContentCard';
+import { StatusChip } from 'components/ui/StatusChip';
+import { PriorityChip } from 'components/ui/PriorityChip';
+import { LoadingState } from 'components/feedback/LoadingState';
+import { EmptyState } from 'components/feedback/EmptyState';
+import { Paginated, Tarefa } from 'types/tarefas';
+import { MAX_PAGE_SIZE } from 'constants/pagination';
 
 const AgendaPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -33,7 +20,7 @@ const AgendaPage: React.FC = () => {
       setLoading(true);
       try {
         const response = await api.get<Paginated<Tarefa>>('/tarefas', {
-          params: { page_size: 100, ordering: 'data_limite', arquivada: false }
+          params: { page_size: MAX_PAGE_SIZE, ordering: 'data_limite', arquivada: false }
         });
         setTarefas(response.data.results || []);
       } finally {
@@ -54,65 +41,49 @@ const AgendaPage: React.FC = () => {
   }, [tarefas]);
 
   return (
-    <Box sx={{ mt: 3 }}>
-      <Typography variant="h4" sx={{ fontWeight: 800 }}>
-        Agenda de Entregas
-      </Typography>
-      <Typography color="text.secondary" sx={{ mb: 2 }}>
-        Planejamento por prazo para acompanhamento diário da operação.
-      </Typography>
+    <PageContainer>
+      <PageHeader
+        title="Agenda de Entregas"
+        description="Planejamento por prazo para acompanhamento diário da operação."
+      />
 
-      {loading && (
-        <Stack spacing={1}>
-          <Skeleton height={64} />
-          <Skeleton height={64} />
-          <Skeleton height={64} />
-        </Stack>
-      )}
-
+      {loading && <LoadingState />}
       {!loading && grouped.length === 0 && (
-        <Card>
-          <CardContent>
-            <Typography sx={{ fontWeight: 700 }}>Nenhuma tarefa na agenda</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Cadastre tarefas com data limite para visualizar o cronograma.
-            </Typography>
-          </CardContent>
-        </Card>
+        <EmptyState
+          title="Nenhuma tarefa na agenda"
+          description="Cadastre tarefas com data limite para visualizar o cronograma."
+        />
       )}
 
       <Stack spacing={2}>
         {grouped.map(([dateKey, itens]) => (
-          <Card key={dateKey}>
-            <CardContent>
-              <Typography sx={{ fontWeight: 700 }}>
-                {dateKey === 'Sem prazo' ? 'Sem prazo definido' : `Prazo: ${dateKey}`}
-              </Typography>
-              <Divider sx={{ my: 1.5 }} />
-              <Stack spacing={1}>
-                {itens.map((tarefa) => (
-                  <Stack
-                    key={tarefa.id}
-                    direction={{ xs: 'column', md: 'row' }}
-                    justifyContent="space-between"
-                    alignItems={{ xs: 'flex-start', md: 'center' }}
-                    spacing={1}
-                  >
-                    <Typography>{tarefa.titulo}</Typography>
-                    <Stack direction="row" spacing={1}>
-                      <Chip size="small" label={tarefa.status} />
-                      <Chip size="small" variant="outlined" label={`Prioridade ${tarefa.prioridade}`} />
-                    </Stack>
+          <ContentCard key={dateKey}>
+            <Typography sx={{ fontWeight: 700 }}>
+              {dateKey === 'Sem prazo' ? 'Sem prazo definido' : `Prazo: ${dateKey}`}
+            </Typography>
+            <Divider sx={{ my: 1.5 }} />
+            <Stack spacing={1}>
+              {itens.map((tarefa) => (
+                <Stack
+                  key={tarefa.id}
+                  direction={{ xs: 'column', md: 'row' }}
+                  justifyContent="space-between"
+                  alignItems={{ xs: 'flex-start', md: 'center' }}
+                  spacing={1}
+                >
+                  <Typography>{tarefa.titulo}</Typography>
+                  <Stack direction="row" spacing={1}>
+                    <StatusChip status={tarefa.status} />
+                    <PriorityChip prioridade={tarefa.prioridade} />
                   </Stack>
-                ))}
-              </Stack>
-            </CardContent>
-          </Card>
+                </Stack>
+              ))}
+            </Stack>
+          </ContentCard>
         ))}
       </Stack>
-    </Box>
+    </PageContainer>
   );
 };
 
 export default AgendaPage;
-

@@ -1,66 +1,50 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  Grid,
-  LinearProgress,
-  Stack,
-  Tab,
-  Tabs,
-  Typography
-} from '@mui/material';
+import { Button, Box, Chip, Stack, Tab, Tabs, Typography } from '@mui/material';
 import { toast } from 'react-toastify';
-import { api } from '../utils/axios';
-import { parseApiError } from '../utils/apiError';
-import {
-  Paginated,
-  Tarefa,
-  TarefaMetrics,
-  TarefaStatus,
-  prioridadeLabel,
-  statusLabel
-} from '../types/tarefas';
+import { api, parseApiError } from 'api/client';
+import { PageContainer } from 'components/layout/PageContainer';
+import { PageHeader } from 'components/layout/PageHeader';
+import { ContentCard } from 'components/ui/ContentCard';
+import { MetricsGrid } from 'components/ui/MetricsGrid';
+import { StatusChip } from 'components/ui/StatusChip';
+import { PriorityChip } from 'components/ui/PriorityChip';
+import { LoadingState } from 'components/feedback/LoadingState';
+import { EmptyState } from 'components/feedback/EmptyState';
+import { DataPagination } from 'components/tables/DataPagination';
+import { usePagination } from 'hooks/usePagination';
+import { useTarefaMetrics } from 'hooks/useTarefaMetrics';
+import { Paginated, Tarefa, TarefaStatus } from 'types/tarefas';
 
 type StatusTab = 'all' | TarefaStatus | 'overdue';
 
-const statusColor: Record<TarefaStatus, 'default' | 'warning' | 'success' | 'info'> = {
-  TODO: 'default',
-  IN_PROGRESS: 'info',
-  DONE: 'success'
-};
-
 const MinhasTarefasPage: React.FC = () => {
+  const { page, pageSize, setPage } = usePagination(20);
+  const { metrics, refresh: refreshMetrics } = useTarefaMetrics('assigned');
+
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<StatusTab>('all');
-  const [tasks, setTasks] = useState<Tarefa[]>([]);
-  const [metrics, setMetrics] = useState<TarefaMetrics | null>(null);
+  const [data, setData] = useState<Paginated<Tarefa> | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [tasksRes, metricsRes] = await Promise.all([
-        api.get<Paginated<Tarefa>>('/tarefas/assigned_to_me', {
-          params: { page_size: 100, arquivada: false, ordering: 'data_limite' }
-        }),
-        api.get<TarefaMetrics>('/tarefas/metrics', { params: { scope: 'assigned' } })
-      ]);
-      setTasks(tasksRes.data.results || []);
-      setMetrics(metricsRes.data);
+      const response = await api.get<Paginated<Tarefa>>('/tarefas/assigned_to_me', {
+        params: { page, page_size: pageSize, arquivada: false, ordering: 'data_limite' }
+      });
+      setData(response.data);
     } catch (error) {
       toast.error(parseApiError(error).message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, pageSize]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   const filteredTasks = useMemo(() => {
+    const tasks = data?.results || [];
     const today = new Date().toISOString().slice(0, 10);
     if (tab === 'overdue') {
       return tasks.filter(
@@ -69,157 +53,145 @@ const MinhasTarefasPage: React.FC = () => {
     }
     if (tab === 'all') return tasks;
     return tasks.filter((task) => task.status === tab);
-  }, [tasks, tab]);
+  }, [data, tab]);
 
   const updateStatus = async (task: Tarefa, action: 'concluir' | 'reabrir' | 'em_andamento') => {
     try {
       await api.post(`/tarefas/${task.id}/${action}`);
       toast.success('Tarefa atualizada.');
       await load();
+      await refreshMetrics();
     } catch (error) {
       toast.error(parseApiError(error).message);
     }
   };
 
-  const kpis = [
-    { label: 'Atribuídas', value: metrics?.total ?? 0, color: '#1976d2' },
-    { label: 'Em andamento', value: metrics?.in_progress ?? 0, color: '#0288d1' },
-    { label: 'Concluídas', value: metrics?.done ?? 0, color: '#2e7d32' },
-    { label: 'Atrasadas', value: metrics?.overdue ?? 0, color: '#d32f2f' }
-  ];
-
   return (
-    <Box sx={{ mt: 2 }}>
-      <Card sx={{ mb: 2, background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)', color: 'white' }}>
-        <CardContent>
-          <Typography variant="h5" sx={{ fontWeight: 800 }}>
-            Minhas Tarefas
-          </Typography>
-          <Typography sx={{ opacity: 0.85, mt: 0.5 }}>
-            Aqui estão as tarefas atribuídas a você. Execute, atualize o status e conclua dentro do prazo.
-          </Typography>
-        </CardContent>
-      </Card>
+    <PageContainer>
+      <PageHeader
+        title="Minhas Tarefas"
+        description="Tarefas atribuídas a você. Execute, atualize o status e conclua dentro do prazo."
+        gradient
+      />
 
-      <Grid container spacing={1.5} sx={{ mb: 2 }}>
-        {kpis.map((item) => (
-          <Grid item xs={6} md={3} key={item.label}>
-            <Card>
-              <CardContent sx={{ py: 1.5 }}>
-                <Typography variant="caption" color="text.secondary">
-                  {item.label}
-                </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 800, color: item.color }}>
-                  {item.value}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+      <MetricsGrid
+        items={[
+          { label: 'Atribuídas', value: metrics?.total ?? 0, color: '#2563eb' },
+          { label: 'Em andamento', value: metrics?.in_progress ?? 0, color: '#0284c7' },
+          { label: 'Concluídas', value: metrics?.done ?? 0, color: '#16a34a' },
+          { label: 'Atrasadas', value: metrics?.overdue ?? 0, color: '#dc2626' }
+        ]}
+      />
 
-      <Card>
-        <CardContent>
-          <Tabs value={tab} onChange={(_, value) => setTab(value)} sx={{ mb: 2 }}>
-            <Tab label="Todas" value="all" />
-            <Tab label="A fazer" value="TODO" />
-            <Tab label="Em andamento" value="IN_PROGRESS" />
-            <Tab label="Concluídas" value="DONE" />
-            <Tab label="Atrasadas" value="overdue" />
-          </Tabs>
+      <ContentCard>
+        <Tabs value={tab} onChange={(_, value) => setTab(value)} sx={{ mb: 2 }}>
+          <Tab label="Todas" value="all" />
+          <Tab label="A fazer" value="TODO" />
+          <Tab label="Em andamento" value="IN_PROGRESS" />
+          <Tab label="Concluídas" value="DONE" />
+          <Tab label="Atrasadas" value="overdue" />
+        </Tabs>
 
-          {loading && <LinearProgress sx={{ mb: 2 }} />}
+        {loading && <LoadingState variant="linear" />}
+        {!loading && filteredTasks.length === 0 && (
+          <EmptyState
+            title="Nenhuma tarefa atribuída"
+            description="Quando alguém atribuir uma tarefa a você, ela aparecerá aqui."
+          />
+        )}
 
-          {!loading && filteredTasks.length === 0 && (
-            <Box sx={{ py: 5, textAlign: 'center' }}>
-              <Typography sx={{ fontWeight: 700 }}>Nenhuma tarefa atribuída</Typography>
-              <Typography color="text.secondary">Quando alguém atribuir uma tarefa a você, ela aparecerá aqui.</Typography>
-            </Box>
-          )}
+        <Stack spacing={1.5}>
+          {filteredTasks.map((task) => {
+            const isOverdue =
+              !!task.data_limite &&
+              task.data_limite < new Date().toISOString().slice(0, 10) &&
+              task.status !== 'DONE';
 
-          <Stack spacing={1.5}>
-            {filteredTasks.map((task) => {
-              const isOverdue =
-                !!task.data_limite &&
-                task.data_limite < new Date().toISOString().slice(0, 10) &&
-                task.status !== 'DONE';
-
-              return (
-                <Card
-                  key={task.id}
-                  variant="outlined"
-                  sx={{
-                    borderLeft: `6px solid ${
-                      task.status === 'DONE' ? '#2e7d32' : isOverdue ? '#d32f2f' : '#1976d2'
-                    }`
-                  }}
-                >
-                  <CardContent>
-                    <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2}>
-                      <Box>
-                        <Typography variant="h6" sx={{ fontWeight: 800 }}>
-                          {task.titulo}
-                        </Typography>
-                        {!!task.descricao && (
-                          <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-                            {task.descricao}
-                          </Typography>
-                        )}
-                        <Stack direction="row" spacing={1} sx={{ mt: 1.2 }} flexWrap="wrap">
-                          <Chip size="small" color={statusColor[task.status]} label={statusLabel[task.status]} />
-                          <Chip size="small" variant="outlined" label={prioridadeLabel[task.prioridade]} />
-                          {!!task.data_limite && (
-                            <Chip
-                              size="small"
-                              color={isOverdue ? 'error' : 'default'}
-                              variant="outlined"
-                              label={`Prazo: ${task.data_limite}`}
-                            />
-                          )}
-                          {!!task.created_by_name && (
-                            <Chip size="small" variant="outlined" label={`Criada por ${task.created_by_name}`} />
-                          )}
-                          {!!task.link && (
-                            <Chip
-                              size="small"
-                              variant="outlined"
-                              label="Abrir link"
-                              component="a"
-                              clickable
-                              href={task.link}
-                              target="_blank"
-                              rel="noreferrer"
-                            />
-                          )}
-                        </Stack>
-                      </Box>
-
-                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="flex-start">
-                        {task.status !== 'DONE' && task.status !== 'IN_PROGRESS' && (
-                          <Button variant="outlined" onClick={() => updateStatus(task, 'em_andamento')}>
-                            Iniciar
-                          </Button>
-                        )}
-                        {task.status !== 'DONE' && (
-                          <Button variant="contained" color="success" onClick={() => updateStatus(task, 'concluir')}>
-                            Concluir
-                          </Button>
-                        )}
-                        {task.status === 'DONE' && (
-                          <Button variant="outlined" onClick={() => updateStatus(task, 'reabrir')}>
-                            Reabrir
-                          </Button>
-                        )}
-                      </Stack>
+            return (
+              <Box
+                key={task.id}
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  bgcolor: 'background.paper',
+                  borderLeft: '6px solid',
+                  borderLeftColor: task.status === 'DONE' ? 'success.main' : isOverdue ? 'error.main' : 'primary.main'
+                }}
+              >
+                <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2}>
+                  <div>
+                    <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                      {task.titulo}
+                    </Typography>
+                    {!!task.descricao && (
+                      <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+                        {task.descricao}
+                      </Typography>
+                    )}
+                    <Stack direction="row" spacing={1} sx={{ mt: 1.2 }} flexWrap="wrap" useFlexGap>
+                      <StatusChip status={task.status} />
+                      <PriorityChip prioridade={task.prioridade} />
+                      {!!task.data_limite && (
+                        <Chip
+                          size="small"
+                          color={isOverdue ? 'error' : 'default'}
+                          variant="outlined"
+                          label={`Prazo: ${task.data_limite}`}
+                        />
+                      )}
+                      {!!task.created_by_name && (
+                        <Chip size="small" variant="outlined" label={`Criada por ${task.created_by_name}`} />
+                      )}
+                      {!!task.link && (
+                        <Chip
+                          size="small"
+                          variant="outlined"
+                          label="Abrir link"
+                          component="a"
+                          clickable
+                          href={task.link}
+                          target="_blank"
+                          rel="noreferrer"
+                        />
+                      )}
                     </Stack>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </Stack>
-        </CardContent>
-      </Card>
-    </Box>
+                  </div>
+
+                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                    {task.status !== 'DONE' && task.status !== 'IN_PROGRESS' && (
+                      <Button variant="outlined" onClick={() => updateStatus(task, 'em_andamento')}>
+                        Iniciar
+                      </Button>
+                    )}
+                    {task.status !== 'DONE' && (
+                      <Button variant="contained" color="success" onClick={() => updateStatus(task, 'concluir')}>
+                        Concluir
+                      </Button>
+                    )}
+                    {task.status === 'DONE' && (
+                      <Button variant="outlined" onClick={() => updateStatus(task, 'reabrir')}>
+                        Reabrir
+                      </Button>
+                    )}
+                  </Stack>
+                </Stack>
+              </Box>
+            );
+          })}
+        </Stack>
+
+        {!!data && data.total_pages > 1 && tab === 'all' && (
+          <DataPagination
+            page={page}
+            totalPages={data.total_pages}
+            count={data.count}
+            onPageChange={setPage}
+          />
+        )}
+      </ContentCard>
+    </PageContainer>
   );
 };
 

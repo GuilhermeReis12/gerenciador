@@ -10,6 +10,7 @@ export type CurrentUser = {
   name: string;
   email: string;
   role: UserRole;
+  link_img?: string;
 };
 
 export type UserCapabilities = {
@@ -68,6 +69,8 @@ export type Paginated<T> = {
   results: T[];
   count: number;
   total_pages: number;
+  next?: string | null;
+  previous?: string | null;
 };
 
 export type AssignableUser = {

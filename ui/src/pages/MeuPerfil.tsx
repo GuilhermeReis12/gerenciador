@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { api } from '../utils/axios';
+import { api } from 'api/client';
 import { Form } from 'informed';
 import Row from '../components/StoryBook/Row/Row';
 import InputText from '../components/InputText';
-import { useTheme } from '@mui/material/styles';
+import { Button } from '@mui/material';
 import {
   CamPerfil,
   ContainerPerfilImage,
@@ -13,17 +13,17 @@ import {
   NamesInformation,
   PerfilImage
 } from '../components/StoryBook/DropDown/DropdownStyle';
-import { Label } from '../components/Typography/Label';
 import { faCamera } from '@fortawesome/pro-light-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { get } from 'lodash';
 import { toast } from 'react-toastify';
 import { handleUpload } from '../upload/service_upload';
-import axios from 'axios';
-import { parseApiError } from '../utils/apiError';
+import { parseApiError } from 'utils/apiError';
+import { PageContainer } from 'components/layout/PageContainer';
+import { PageHeader } from 'components/layout/PageHeader';
+import { ContentCard } from 'components/ui/ContentCard';
 
 const MeuPerfilPage: React.FC = () => {
-  const theme = useTheme();
   const [perfil, setPerfil] = useState<any>();
   const [files, setFiles] = useState(null);
   const [errorMsg, setErrorMsg] = useState<any>([]);
@@ -115,32 +115,26 @@ const MeuPerfilPage: React.FC = () => {
   };
 
   return (
+    <PageContainer>
+      <PageHeader title="Meu perfil" description="Edite suas informações pessoais e credenciais de acesso." />
+      <ContentCard>
     <Form
       onSubmit={fetchPassword}
       initialValues={perfil}
-      style={{ marginTop: '2rem' }}
     >
       <>
         <Row
           direction="column"
           style={{
-            marginTop: '1.5rem'
+            marginTop: '0.5rem'
           }}
         >
-          <h1
-            style={{
-              color: theme.color?.primary.main,
-              marginBottom: '0.3rem'
-            }}
-          >
-            Meu perfil
-          </h1>
-          <span>Edite suas informações aqui</span>
           <hr
             style={{
               width: '100%',
-              border: '1px solid #dfdfdf',
-              marginTop: '2rem'
+              border: '1px solid #e2e8f0',
+              marginTop: '0.5rem',
+              marginBottom: '1rem'
             }}
           />
         </Row>
@@ -241,33 +235,14 @@ const MeuPerfilPage: React.FC = () => {
           </Row>
         </Row>
         <Row justifyContent="flex-end">
-          <button
-            style={{
-              marginTop: '1.5rem',
-              padding: '12px 16px 12px 16px',
-              borderRadius: '8px',
-              border: `1.5px solid ${theme.color?.primary.main}`,
-              // height: '43px',
-
-              cursor: 'pointer',
-              backgroundColor: `${theme.color?.primary.main}`
-            }}
-            type="submit"
-          >
-            <Label
-              label="Salvar Alterações"
-              style={{
-                fontFamily: 'Inter',
-                fontSize: '16px',
-                color: theme.color?.textColor.white,
-                textAlign: 'center',
-                fontWeight: 700
-              }}
-            />
-          </button>
+          <Button variant="contained" type="submit" sx={{ mt: 2 }}>
+            Salvar alterações
+          </Button>
         </Row>
       </>
     </Form>
+      </ContentCard>
+    </PageContainer>
   );
 };
 

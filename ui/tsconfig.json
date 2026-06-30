@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": "src",
     "allowImportingTsExtensions": true,
     "target": "es5",
     "lib": [

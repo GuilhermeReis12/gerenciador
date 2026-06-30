@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api } from '../utils/axios';
-import { CurrentUser } from '../types/tarefas';
-import { getStoredUser, setStoredUser } from '../utils/auth';
+import { api } from 'api/client';
+import { CurrentUser } from 'types/tarefas';
+import { getStoredUser, setStoredUser } from 'utils/auth';
 
 export function useCurrentUser() {
   const [user, setUser] = useState<CurrentUser | null>(getStoredUser());
@@ -17,7 +17,8 @@ export function useCurrentUser() {
           username: profile.username,
           name: profile.name,
           email: profile.email,
-          role: profile.role
+          role: profile.role,
+          link_img: profile.link_img
         };
         setStoredUser(current);
         setUser(current);
