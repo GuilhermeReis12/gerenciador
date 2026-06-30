@@ -1,6 +1,18 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 
+class IsManagerOrAdmin(BasePermission):
+    """Allow access only to ADMIN and MANAGER roles."""
+
+    message = "Acesso restrito para gestores e administradores."
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        return getattr(user, "role", "OPERATOR") in {"ADMIN", "MANAGER"}
+
+
 class IsTaskWriteAllowed(BasePermission):
     """
     Regras RBAC mínimas para operações de tarefas.

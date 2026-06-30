@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import '../components/login/BackgroundImage.css';
 import { TFormLogin } from '../types/Login/LoginTypes';
 import { toast } from 'react-toastify';
+import { setStoredUser, setStoredEmpresas, setActiveEmpresaId } from '../utils/auth';
+import { parseApiError } from '../utils/apiError';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -18,19 +20,31 @@ const LoginPage: React.FC = () => {
 
       const response = await api.post('/login', payload);
       localStorage.setItem('token', response.data.user.token);
-      navigate('/home');
-    } catch (error: any) {
-      console.error('Error details:', error);
 
-      if (error.response) {
-        const errorMessage = error.response.data?.message || 'Ocorreu um erro durante o processo de autenticação.';
-        toast.error(errorMessage);
-      } else if (error.request) {
-        toast.error('Erro de conexão. Verifique sua conexão com a internet.');
-      } else {
-        toast.error('Ocorreu um erro desconhecido.');
+      const meResponse = await api.get('/me');
+      const profile = meResponse.data[0];
+      if (profile) {
+        setStoredUser({
+          id: profile.id,
+          username: profile.username,
+          name: profile.name,
+          email: profile.email,
+          role: profile.role
+        });
       }
+
+      const empresasResponse = await api.get('/empresas/minhas');
+      const empresas = empresasResponse.data.empresas || [];
+      setStoredEmpresas(empresas);
+      const activeId = empresasResponse.data.active_empresa_id || empresas[0]?.id;
+      if (activeId) {
+        setActiveEmpresaId(activeId);
       }
+
+      navigate('/home');
+    } catch (error: unknown) {
+      toast.error(parseApiError(error).message);
+    }
   };
 
   return (

@@ -18,6 +18,13 @@ import {
 } from '@mui/material';
 import { toast } from 'react-toastify';
 import { api } from '../utils/axios';
+import { parseApiError } from '../utils/apiError';
+
+type Empresa = {
+  id: number;
+  nome: string;
+  cnpj: string;
+};
 
 type Registro = {
   id: number;
@@ -28,6 +35,7 @@ type Registro = {
   quantidade: string;
   unidade: string;
   ativo: boolean;
+  empresa?: number;
 };
 
 type Paginated<T> = {
@@ -38,8 +46,11 @@ const OperacoesPage: React.FC = () => {
   const [tipo, setTipo] = useState('');
   const [q, setQ] = useState('');
   const [registros, setRegistros] = useState<Registro[]>([]);
+  const [empresas, setEmpresas] = useState<Empresa[]>([]);
+  const [userEmpresaId, setUserEmpresaId] = useState<number | ''>('');
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
+    empresa: '' as number | '',
     tipo: 'PRODUCT',
     titulo: '',
     descricao: '',
@@ -48,16 +59,43 @@ const OperacoesPage: React.FC = () => {
     unidade: 'UN'
   });
 
+  const loadEmpresas = async () => {
+    try {
+      const [empresasResponse, minhaEmpresaResponse] = await Promise.allSettled([
+        api.get<Paginated<Empresa> | Empresa[]>('/empresas'),
+        api.get<Empresa>('/empresas/minha_empresa')
+      ]);
+
+      if (empresasResponse.status === 'fulfilled') {
+        const data = empresasResponse.value.data;
+        const list = Array.isArray(data) ? data : data.results || [];
+        setEmpresas(list);
+      }
+
+      if (minhaEmpresaResponse.status === 'fulfilled') {
+        const empresaId = minhaEmpresaResponse.value.data.id;
+        setUserEmpresaId(empresaId);
+        setForm((prev) => ({ ...prev, empresa: empresaId }));
+      }
+    } catch (error) {
+      toast.error(parseApiError(error).message);
+    }
+  };
+
   const load = async () => {
     try {
       const response = await api.get<Paginated<Registro>>('/operacoes', {
         params: { tipo: tipo || undefined, q: q || undefined }
       });
       setRegistros(response.data.results || []);
-    } catch {
-      toast.error('Não foi possível carregar operações.');
+    } catch (error) {
+      toast.error(parseApiError(error).message);
     }
   };
+
+  useEffect(() => {
+    loadEmpresas();
+  }, []);
 
   useEffect(() => {
     load();
@@ -68,14 +106,20 @@ const OperacoesPage: React.FC = () => {
       toast.error('Título é obrigatório.');
       return;
     }
+    if (!form.empresa) {
+      toast.error('Selecione uma empresa.');
+      return;
+    }
     try {
       await api.post('/operacoes', {
         ...form,
+        empresa: form.empresa,
         quantidade: Number(form.quantidade)
       });
       toast.success('Registro criado com sucesso.');
       setOpen(false);
       setForm({
+        empresa: userEmpresaId || '',
         tipo: 'PRODUCT',
         titulo: '',
         descricao: '',
@@ -84,9 +128,17 @@ const OperacoesPage: React.FC = () => {
         unidade: 'UN'
       });
       load();
-    } catch (e: any) {
-      toast.error(e?.response?.data?.detail || 'Não foi possível criar o registro.');
+    } catch (error) {
+      toast.error(parseApiError(error).message);
     }
+  };
+
+  const openCreateModal = () => {
+    setForm((prev) => ({
+      ...prev,
+      empresa: userEmpresaId || prev.empresa || ''
+    }));
+    setOpen(true);
   };
 
   return (
@@ -100,7 +152,7 @@ const OperacoesPage: React.FC = () => {
             Base única para gerenciamento multipropósito por empresa.
           </Typography>
         </Box>
-        <Button variant="contained" onClick={() => setOpen(true)}>
+        <Button variant="contained" onClick={openCreateModal}>
           Novo registro
         </Button>
       </Stack>
@@ -159,6 +211,29 @@ const OperacoesPage: React.FC = () => {
         <DialogTitle>Novo registro operacional</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
+            <FormControl fullWidth required>
+              <InputLabel>Empresa</InputLabel>
+              <Select
+                label="Empresa"
+                value={form.empresa}
+                disabled={!!userEmpresaId}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    empresa: e.target.value === '' ? '' : Number(e.target.value)
+                  }))
+                }
+              >
+                <MenuItem value="">
+                  <em>Selecione uma empresa</em>
+                </MenuItem>
+                {empresas.map((empresa) => (
+                  <MenuItem key={empresa.id} value={empresa.id}>
+                    {empresa.nome}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <FormControl fullWidth>
               <InputLabel>Tipo</InputLabel>
               <Select

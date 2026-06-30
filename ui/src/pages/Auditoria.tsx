@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { toast } from 'react-toastify';
 import { api } from '../utils/axios';
+import { parseApiError } from '../utils/apiError';
 
 type AuditLog = {
   id: number;
@@ -37,7 +38,8 @@ const actionLabel: Record<string, string> = {
   STATUS_CHANGED: 'Status alterado',
   ARCHIVED: 'Arquivada',
   RESTORED: 'Desarquivada',
-  BULK_UPDATED: 'Atualização em lote'
+  BULK_UPDATED: 'Atualização em lote',
+  ASSIGNED: 'Atribuída'
 };
 
 const AuditoriaPage: React.FC = () => {
@@ -57,9 +59,8 @@ const AuditoriaPage: React.FC = () => {
           }
         });
         setData(response.data);
-      } catch (e: any) {
-        const detail = e?.response?.data?.detail;
-        toast.error(detail || 'Não foi possível carregar os logs de auditoria.');
+      } catch (error) {
+        toast.error(parseApiError(error).message);
       } finally {
         setLoading(false);
       }

@@ -8,6 +8,8 @@ class TarefaFilter(django_filters.FilterSet):
     q = django_filters.CharFilter(method="filter_q")
     data_limite_de = django_filters.DateFilter(field_name="data_limite", lookup_expr="gte")
     data_limite_ate = django_filters.DateFilter(field_name="data_limite", lookup_expr="lte")
+    assigned_to = django_filters.NumberFilter(field_name="assigned_to")
+    assigned_team = django_filters.NumberFilter(field_name="assigned_team")
 
     class Meta:
         model = Tarefa
@@ -24,4 +26,3 @@ class TarefaFilter(django_filters.FilterSet):
             Q(titulo__icontains=value)
             | Q(descricao__icontains=value)
         )
-

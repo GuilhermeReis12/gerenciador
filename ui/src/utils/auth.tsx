@@ -3,9 +3,51 @@ export const getToken = (): string | null => {
 };
 
 export const getPerfil = () => {
+  return getStoredUser();
+};
+
+export const getStoredUser = () => {
   const perfil: string | null = localStorage.getItem('user');
-  const perfilObj = perfil && JSON.parse(perfil);
-  return perfilObj;
+  if (!perfil) return null;
+  try {
+    return JSON.parse(perfil);
+  } catch {
+    return null;
+  }
+};
+
+export const setStoredUser = (user: Record<string, unknown>) => {
+  localStorage.setItem('user', JSON.stringify(user));
+};
+
+export type StoredEmpresa = {
+  id: number;
+  nome: string;
+  cnpj?: string;
+  ativo?: boolean;
+};
+
+export const getActiveEmpresaId = (): number | null => {
+  const value = localStorage.getItem('activeEmpresaId');
+  return value ? Number(value) : null;
+};
+
+export const setActiveEmpresaId = (empresaId: number) => {
+  localStorage.setItem('activeEmpresaId', String(empresaId));
+};
+
+export const getStoredEmpresas = (): StoredEmpresa[] => {
+  const raw = localStorage.getItem('empresas');
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+};
+
+export const setStoredEmpresas = (empresas: StoredEmpresa[]) => {
+  localStorage.setItem('empresas', JSON.stringify(empresas));
 };
 
 export const isAuthenticated = (): boolean => {
@@ -36,6 +78,7 @@ export const TempoRestante = (dataFinal: string): string => {
 export function clearToken(): void {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
-  localStorage.removeItem('provider');
+  localStorage.removeItem('activeEmpresaId');
+  localStorage.removeItem('empresas');
   localStorage.removeItem('institucion');
 }

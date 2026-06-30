@@ -1,6 +1,5 @@
 from django.db.models import Q
 from rest_framework import permissions
-from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from operacoes.models import RegistroOperacional
@@ -31,14 +30,5 @@ class RegistroOperacionalViewSet(ModelViewSet):
         return queryset.order_by("-created_at")
 
     def perform_create(self, serializer):
-        empresa = getattr(self.request.user, "empresa", None)
-        serializer.save(empresa=empresa, created_by=self.request.user)
-
-    def create(self, request, *args, **kwargs):
-        if not getattr(request.user, "empresa", None):
-            return Response(
-                {"detail": "Usuário sem empresa associada para criar registros."},
-                status=400,
-            )
-        return super().create(request, *args, **kwargs)
+        serializer.save(created_by=self.request.user)
 

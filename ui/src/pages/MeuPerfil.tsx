@@ -20,6 +20,7 @@ import { get } from 'lodash';
 import { toast } from 'react-toastify';
 import { handleUpload } from '../upload/service_upload';
 import axios from 'axios';
+import { parseApiError } from '../utils/apiError';
 
 const MeuPerfilPage: React.FC = () => {
   const theme = useTheme();
@@ -43,44 +44,51 @@ const MeuPerfilPage: React.FC = () => {
   }, []);
 
   const fetchPassword = (formValues: any) => {
-    try {
+    const newPassword = formValues?.values?.new_password;
+    const confirmPassword = formValues?.values?.confirm_password;
+
+    if (newPassword || confirmPassword) {
       const params = {
-        password: formValues?.values?.new_password,
-        confirm_password: formValues?.values?.confirm_password
+        password: newPassword,
+        confirm_password: confirmPassword
       };
       return api
         .post(`/validate_password`, params)
-        .then((res) => {
+        .then(() => {
           handleSubmit(formValues);
         })
         .catch((err) => {
-          setErrorMsg(err?.response.data);
-          console.error(err);
+          setErrorMsg(err?.response?.data || parseApiError(err).fieldErrors);
         });
-    } catch (err) {
-      console.error(err);
     }
+
+    handleSubmit(formValues);
   };
 
   const handleSubmit = (formValues: any) => {
-    const params = {
-      ...formValues?.values,
-      password: formValues?.values?.confirm_password,
-      username: perfil?.username,
-      user_image: files || perfil?.user_image,
-      name: perfil?.username
+    const params: Record<string, unknown> = {
+      username: formValues?.values?.username || perfil?.username,
+      email: formValues?.values?.email || perfil?.email,
+      name: formValues?.values?.name || perfil?.name,
+      user_image: files || perfil?.user_image
     };
+
+    const newPassword = formValues?.values?.new_password;
+    if (newPassword) {
+      params.password = newPassword;
+    }
+
     api
-      .patch(`/users/${perfil?.id}/update_user`, { ...params })
-      .then((response) => {
-        toast.success('Perfil Atualizado com sucesso');
+      .patch(`/users/${perfil?.id}/update_user`, params)
+      .then(() => {
+        toast.success('Perfil atualizado com sucesso.');
         renderPerfil();
         setErrorMsg([]);
       })
       .catch((err) => {
-        setErrorMsg(err?.response.data);
-        Object.keys(err?.response.data).forEach((field) => { });
-        console.error(err);
+        const parsed = parseApiError(err);
+        setErrorMsg(err?.response?.data || parsed.fieldErrors);
+        toast.error(parsed.message);
       });
   };
 
@@ -187,6 +195,14 @@ const MeuPerfilPage: React.FC = () => {
               required={false}
               label="Nome"
               placeholder="Digite seu nome"
+              field="name"
+              onChange={undefined}
+              errorMessage={errorMsg?.name}
+            />
+            <InputText
+              required={false}
+              label="Usuário"
+              placeholder="Digite seu usuário"
               field="username"
               onChange={undefined}
               errorMessage={errorMsg?.username}

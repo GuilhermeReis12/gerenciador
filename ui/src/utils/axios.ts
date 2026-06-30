@@ -3,7 +3,7 @@ import axios, {
   AxiosRequestConfig,
   AxiosRequestHeaders
 } from 'axios';
-import { getToken, clearToken } from './auth';
+import { getToken, clearToken, getActiveEmpresaId } from './auth';
 
 const api = axios.create({
   baseURL: `${process.env.REACT_APP_API_HOST || 'http://localhost:8000'}/api`
@@ -12,11 +12,13 @@ const api = axios.create({
 api.interceptors.request.use(
   (config: AxiosRequestConfig) => {
     const token = getToken();
+    const empresaId = getActiveEmpresaId();
     return {
       ...config,
       headers: {
         ...config.headers,
-        Authorization: `JWT ${token}`
+        Authorization: `JWT ${token}`,
+        ...(empresaId ? { 'X-Empresa-Id': String(empresaId) } : {})
       } as AxiosRequestHeaders
     };
   },
@@ -37,3 +39,4 @@ api.interceptors.response.use(
 );
 
 export { api };
+export { parseApiError } from './apiError';

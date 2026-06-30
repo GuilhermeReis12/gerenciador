@@ -1,6 +1,7 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework import permissions
 from login import models
 from login import serializers
 from login.models import User
@@ -32,19 +33,36 @@ class UserView(ModelViewSet):
     @action(methods=["patch"], detail=True)
     def update_user(self, request, pk):
         try:
-            password = request.data["password"]
             user = User.objects.filter(pk=pk).first()
+            if not user:
+                return Response({"detail": "Usuário não encontrado."}, status=404)
 
-            user.username = request.data["username"]
-            user.email = request.data["email"]
-            user.name = request.data["name"]
-            user.user_image = request.data["user_image"]
+            if request.user.id != user.id and getattr(request.user, "role", "OPERATOR") not in {
+                "ADMIN",
+                "MANAGER",
+            }:
+                return Response(
+                    {"detail": "Você não possui permissão para editar este perfil."},
+                    status=403,
+                )
+
+            if "username" in request.data:
+                user.username = request.data["username"]
+            if "email" in request.data:
+                user.email = request.data["email"]
+            if "name" in request.data:
+                user.name = request.data["name"]
+            if "user_image" in request.data:
+                user.user_image = request.data["user_image"]
             if "role" in request.data:
                 user.role = request.data["role"]
             if "empresa" in request.data:
                 user.empresa_id = request.data["empresa"]
 
-            user.set_password(password)
+            password = request.data.get("password") or request.data.get("confirm_password")
+            if password:
+                user.set_password(password)
+
             user.save()
             return Response(status=200, data="Usuário atualizado com sucesso!")
         except Exception as err:
@@ -64,6 +82,7 @@ class UserView(ModelViewSet):
 class MeView(GenericViewSet, ListModelMixin):
     serializer_class = serializers.MeSerializer
     queryset = models.User.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         queryset = super().get_queryset()

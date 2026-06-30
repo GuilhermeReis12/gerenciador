@@ -16,6 +16,8 @@ import { useNavigate } from 'react-router-dom';
 import { isAuthenticated } from '../../../utils/auth';
 import { useTheme } from '@mui/material/styles';
 import { api } from '../../../utils/axios';
+import NotificationBell from '../../Notifications/NotificationBell';
+import EmpresaSwitcher from '../../Empresa/EmpresaSwitcher';
 
 export const Header = ({ setPerfilModal }: HeaderProps) => {
   const [isMobile, setIsMobile] = useState(false);
@@ -67,6 +69,8 @@ export const Header = ({ setPerfilModal }: HeaderProps) => {
           </ContainerSesi>
           {isAuthenticated() ? (
             <ContainerPerfil>
+              <EmpresaSwitcher />
+              <NotificationBell />
               <CirclePerfil>
                 <img style={{ height: '35px' }} src={perfil?.link_img} alt="" />
               </CirclePerfil>
